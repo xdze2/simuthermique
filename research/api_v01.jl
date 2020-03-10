@@ -7,268 +7,162 @@
 #       extension: .jl
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.3.4
+#       jupytext_version: 1.3.3
 #   kernelspec:
-#     display_name: Julia 1.3.0
+#     display_name: Julia 1.3.1
 #     language: julia
 #     name: julia-1.3
 # ---
 
 using LinearAlgebra
+using SparseArrays
 
 # +
+"""
+Thermal Properties of material
+
+        k      thermal conductivity, W/m2/K  
+        rho    density, kg/m3  
+        Cp     specific heat, J/kg  
+        alpha  thermal diffusivity, m2/s
+"""
 struct Material
-    """
-    Material
-    k      thermal conductivity, W/m2/K
-    rho    density, kg/m3
-    Cp     specific heat, J/kg
-    alpha  Thermal diffusivity, 
-    """
     k     ::Float64
     rho   ::Float64
     Cp    ::Float64
     alpha ::Float64
 end
 
-Material(k, rho, Cp) = Material(k, rho, Cp, k/(rho*Cp))
+Material(k, rho, Cp) = Material(k, rho, Cp, k/(rho*Cp));
 # -
 
-mat = Material(0.2, 2000, 300)
-
-# +
-struct SimpleThermalMass
-   mass_th # rhoCp V 
-end
-
-struct Wall
-   mat       ::Material
-   thickness ::Float64
-   surface   ::Float64
-end
-
-struct Model
-    simple_masses
-    walls
-    sources
-    resistances
-end
-
-Model() = Model(Dict(), Dict(), Dict(), [])
-
-
-function add!(m::Model, simplemass::SimpleThermalMass; id=nothing)
-    if id == nothing
-        id = "node$(length(m.simple_masses)+1)"
-        println("create node $id")
-    end
-    m.simple_masses[id] = simplemass
-    return id
-end
-
-function add!(m::Model, wall::Wall; id=nothing)
-    if id == nothing
-        id = "wall$(length(m.simple_masses)+1)"
-        println("create a wall named $id")
-    end
-    m.walls[id] = wall
-    return id
-end
-
-# +
-m = Model()
-air_int = SimpleThermalMass(3.5, "air intérieur")
-add!(m, air_int; id="air_int")
-
-air_cave = SimpleThermalMass(1.5, "air de la cave")
-add!(m, air_cave; id="air_cave")
-
-
-mur_ext = Wall(mat, 0.30, 4, "un mur")
-add!(m, mur_ext)
-
-# +
-dt = 5*60.0
-nodes_mass = []
-M_i, M_j, M_v = [], [], []
-id_to_index = Dict{String, Int}()
-
-for (k, (id, thermalmass)) in enumerate(pairs(m.simple_masses))
-    id_to_index[id] = k
-    push!(nodes_mass, thermalmass.mass_th)
-end
-last_idx = length(nodes)
-
-for (id, wall) in pairs(m.walls)
-    massth, M = constructmesh(wall, dt)
-    
-    id_left = "$(id)_left"
-    id_right = "$(id)_right"
-    id_to_index[id_left] = 1 + last_idx
-    id_to_index[id_right] = 1 + last_idx + length(massth)
-    
-    last_idx = id_to_index[id_right]
-    
-    append!(nodes_mass, massth)
-    #push!(nodes, thermalmass.mass_th)
-end
-
-N = length(nodes)
-M = zeros(N, N)
-# -
-
-id_to_index
-
-function constructmesh(wall::Wall, dt)
-    """-- Build the adiabatic wall matrix --"""
-    delta_x = sqrt( dt * wall.mat.alpha )
-    N = 1 + Int(ceil( wall.thickness/delta_x ))
-    dx = wall.thickness / N
-    
-    M = Tridiagonal(ones(N-1), -2.0 * ones(N), ones(N-1));
-    #M[1, 1] += -2.0*h_left*dx/mat.k
-    #M[1, 2] = 2.0
-    #M[end, end] += -2.0*h_right*dx/mat.k
-    #M[end, end-1] = 2.0
-
-    M[1, 1] = -1
-    M[end, end] = -1
-    #A = mat.alpha / dx^2 * M;
-    massth = ones(N) * wall.mat.rho * wall.mat.Cp * dx * wall.surface
-    massth[1] *= 0.5
-    massth[end] *= 0.5
-    return massth, (wall.mat.k / dx) * M
-end
+clay = Material(1.28, 880.0, 1450.0) # Clay
 
 # ## v2
-
-using LinearAlgebra
-
-# +
-struct Material
-    """
-    Material
-    k      thermal conductivity, W/m2/K
-    rho    density, kg/m3
-    Cp     specific heat, J/kg
-    alpha  Thermal diffusivity, 
-    """
-    k     ::Float64
-    rho   ::Float64
-    Cp    ::Float64
-    alpha ::Float64
-end
-
-Material(k, rho, Cp) = Material(k, rho, Cp, k/(rho*Cp))
-# -
-
-mat = Material(0.2, 2000, 300)
 
 # +
 #  M dT/dt = K T  +  S
 struct Model
-    nodes   # actually thermal mass
-    id_to_index
-    walls
     dt ::Float64
-    K_i
-    K_j
-    K_v
-    S#sources
-    #resistances
+    id_to_index ::Dict{String,Int64}
+    M ::Array{Float64,1}   # thermal mass of each nodes
+    K_ijv  # Array of named tuple (i, j, value)
+    S_iv  #sources -- array of [(idx, function(t)), ()...]
 end
 
-Model(dt) = Model([], Dict(), Dict(), dt, [], [], [], [])
+Model(dt) = Model(dt,
+                  Dict{String,Int64}(),
+                  Array{Float64,1}(),
+                  [],
+                  []);
 # -
-
-
-
-# +
 function add_simplethermalmass!(model, node_id, th_mass)
-    # warning if already exist 
-    push!(model.nodes, th_mass)
-    model.id_to_index[node_id] = length(model.nodes)
+    # error if key already exist
+    if haskey(model.id_to_index, node_id)
+        error("""Can't add simple mass: "$node_id", the id already exists""")
+    end
+    push!(model.M, th_mass)
+    model.id_to_index[node_id] = length(model.M)
     return node_id
 end
 
+# test
+m = Model(5*60)
+add_simplethermalmass!(m, "1", 0.1)
+add_simplethermalmass!(m, "2", 0.2)
 
 function add_wall!(model, wall_id, material, thickness, surface)
-    # mesh:
+    # Mesh
     delta_x = sqrt( model.dt * material.alpha )
     N = 1 + Int(ceil( thickness/delta_x ))
     dx = thickness / N
     
-    # thermal mass:
-    massth = ones(N) * material.rho * material.Cp * dx * surface
-    massth[1] *= 0.5
-    massth[end] *= 0.5
+    # Register surfaces node index
+    i_ext = length(model.M) + 1
+    i_int = length(model.M) + N
     
-    # warning if already exist 
-    id_left = "$(wall_id)_left"
-    id_right = "$(wall_id)_right"
-    model.id_to_index[id_left] = length(model.nodes) + 1
+    id_ext = "$(wall_id)_ext"
+    id_int = "$(wall_id)_int"
+    if haskey(model.id_to_index, id_ext) || haskey(model.id_to_index, id_int)
+        error("""Can't add wall: "$wall_id", the id already exists""")
+    end
+    model.id_to_index[id_ext] = i_ext
+    model.id_to_index[id_int] = i_int
     
-    append!(model.nodes, massth)
-    model.id_to_index[id_right] = length(model.nodes)
+    is_boundary(i) = (i == i_ext || i == i_int)
     
+    # Thermal mass
+    massth = (material.rho * material.Cp * dx * surface * (is_boundary(i) ? 0.5 : 1.0)
+              for i in i_ext:i_int)
+    append!(model.M, massth)
+
     # Konduction
-    ii = collect(model.id_to_index[id_left]:model.id_to_index[id_right])
+    k_dx = material.k / dx
+    diagonal   = ( (i=i,   j=i,   v=(is_boundary(i) ? -1.0 : -2.0)*k_dx)
+                  for i in i_ext:i_int )
+    upper_diag = ( (i=i,   j=i+1, v=+k_dx) for i in i_ext:i_int-1 )
+    lower_diag = ( (i=i+1, j=i,   v=+k_dx) for i in i_ext:i_int-1 )
+    
+    append!(model.K_ijv, diagonal)
+    append!(model.K_ijv, upper_diag)
+    append!(model.K_ijv, lower_diag)
 
-    # diagonal
-    append!(model.K_i, ii)
-    append!(model.K_j, ii)
-    append!(model.K_v, 2.0*ones(length(ii)))
-    # upper diag
-    append!(model.K_i, ii[1:end-1])
-    append!(model.K_j, ii[2:end])
-    append!(model.K_v, -1.0 *ones(length(ii)-1))
-    # lower diag
-    append!(model.K_i, ii[2:end])
-    append!(model.K_j, ii[1:end-1])
-    append!(model.K_v, -1.0 *ones(length(ii)-1))
-
-    return id_left, id_right  # nammed tupled ? 
+    return (ext=id_ext, int=id_int)
 end
-# -
 
+function get_sparse_K(model::Model)
+    I = map(x->x.i, m.K_ijv)
+    J = map(x->x.j, m.K_ijv)
+    V = map(x->x.v, m.K_ijv)
+    n = length(m.M)
+    K = sparse(I, J, V, n, n)
+    return K
+end
+
+# +
 m = Model(5*60)
 
 air_int = add_simplethermalmass!(m, "T_air_int", 24.2)
 
-wall1 = add_wall!(m, "wall_ext_int", mat, .20, 4.)
+wall1 = add_wall!(m, "wall1", clay, .20, 4.)
 
 sol = add_simplethermalmass!(m, "T_sol", 4.2)
 
-function add_resistance!(model, id_nodeA, id_nodeB, R)
-    i = model.id_to_index[id_nodeA]
-    j = model.id_to_index[id_nodeB]
-    push!(model.K_i, i)
-    push!(model.K_j, j)
-    push!(model.K_v, -R)
-    
-    push!(model.K_i, j)
-    push!(model.K_j, i)
-    push!(model.K_v, -R)
-end
-
-# +
-add_resistance!(m, air_int, wall1[2], R)
-add_resistance!(m, air_int, wall1[2], h=1.3, surface=24.)
-
-add_source(m, wall1[1])
+wall1 = add_wall!(m, "wall2", clay, .10, 4.)
 # -
 
-m.id_to_index
+function add_conductance!(model, id_nodeA, id_nodeB, UA)
+    if ~haskey(model.id_to_index, id_nodeA)
+        error("""Can't add conductance: node "$id_nodeA" doesn't exist""")
+    end
+    if ~haskey(model.id_to_index, id_nodeB)
+        error("""Can't add conductance: node "$id_nodeB" doesn't exist""")
+    end
+    i = model.id_to_index[id_nodeA]
+    j = model.id_to_index[id_nodeB]
+    
+    cells = [(i=i, j=i, v=-UA),
+             (i=j, j=j, v=-UA),
+             (i=i, j=j, v=+UA),
+             (i=j, j=i, v=+UA)] 
+    append!(model.K_ijv, cells);
+    return nothing
+end
 
-using SparseArrays
+add_conductance!(m, "ez", wall1[2], 0.1)
 
-K = sparse(Array{Int}(m.K_i), Array{Int}(m.K_j),
-            Array{Float64}(m.K_v), length(m.nodes), length(m.nodes));
+add_conductance!(m, air_int, wall1.ext, 0.1)
 
-factorize(K)
+function add_convectivesource(model, node_id, Tsource, hS)
+    i = model.id_to_index[node_id]
+    push!(model.K_ijv, (i=i, j=i, v=-hS));
+    push!(model.S_iv, (i=i, v=t -> hS*Tsource(t)))  # more generic args?
+    return nothing
+end
 
-typeof(K)
+T_ext(t) = cos(t)
+add_convectivesource(m, wall1.int, T_ext, 1.5)
 
-Array(K)
+m.S_iv
 
 
