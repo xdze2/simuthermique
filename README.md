@@ -9,8 +9,9 @@ simulation thermique dynamique (du bâtiment)
 
 ## Propriétés matériaux
 
-- https://www.rt-batiment.fr/documents/rt2012/thbat/2-Fascicule_materiaux.pdf
 
+- https://www.rt-batiment.fr/documents/rt2012/thbat/2-Fascicule_materiaux.pdf
+- https://energieplus-lesite.be/
 
 ## Modèle thermique dynamique
 
@@ -29,3 +30,16 @@ $$
 \phi_{i \rightarrow j} = hA\,( T_j - T_i )
 $$
 
+
+
+## Blocs
+
+- Weather data
+- Model topologique (i.e. model definition object)
+    - Model parameter setting
+- Linear ODE Solver
+    - assemblage
+    - solve
+    
+    
+- fit to measured data
