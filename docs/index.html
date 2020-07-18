@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>simuthermique</title>
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      span.underline{text-decoration: underline;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+</head>
+<body>
+<h1 id="simuthermique">simuthermique</h1>
+<p>code Python &amp; Julia de simulation thermique dynamique (du bâtiment)</p>
+<h2 id="données-météorologiques">Données météorologiques</h2>
+<ul>
+<li>annuels, heure par heure, et locales <a href="./get_weatherdata.py">avec l’API Darksky</a> et la librairie python <code>pvlib</code> pour la position du soleil dans le ciel et le flux solaire</li>
+<li>données météorologiques de la <a href="https://www.rt-batiment.fr/batiments-neufs/reglementation-thermique-2012/donnees-meteorologiques.html">RT 2012</a></li>
+</ul>
+<h2 id="propriétés-thermique-des-matériaux">Propriétés thermique des matériaux</h2>
+<ul>
+<li>https://www.rt-batiment.fr/documents/rt2012/thbat/2-Fascicule_materiaux.pdf</li>
+<li>https://energieplus-lesite.be/</li>
+</ul>
+<h2 id="modèle-thermique-dynamique">Modèle thermique dynamique</h2>
+<p>Le modèle est l’équivalent d’un circuit électrique de résistances et condensateurs.</p>
+<p>Système d’équation différentielles linéaires: <br /><span class="math display">$$
+M \frac{dT}{dt} = K \times T(t) + S(t)
+$$</span><br /></p>
+<p>avec <span class="math inline"><em>T</em></span> le vecteur de température des noeuds du réseau, <span class="math inline"><em>M</em></span> les masses thermiques, <span class="math inline"><em>K</em></span> la matrice de connections entre les noeuds (résitances thermiques) et <span class="math inline"><em>S</em></span> les termes extérieures (sources).</p>
+<blockquote>
+<p><em>remarque:</em> <span class="math inline"><em>M</em></span> est un vecteur ou une matrice…</p>
+</blockquote>
+<p>Conduction <br /><span class="math display"><em>ϕ</em><sub><em>i</em> → <em>j</em></sub> = <em>U</em><em>A</em> (<em>T</em><sub><em>j</em></sub> − <em>T</em><sub><em>i</em></sub>)</span><br /></p>
+<p>Convection (considérée linéaire) <br /><span class="math display"><em>ϕ</em><sub><em>i</em> → <em>j</em></sub> = <em>h</em><em>A</em> (<em>T</em><sub><em>j</em></sub> − <em>T</em><sub><em>i</em></sub>)</span><br /></p>
+<h2 id="solver">Solver</h2>
+<p>- See part “3 Fully discrete approximation” in <a href="http://www.csc.kth.se/utbildning/kth/kurser/DN2255/ndiff13/Lecture3.pdf">Lecture 3 - Finite Volume Discretization of the Heat Equation</a></p>
+<ul>
+<li>Linear system (matrix) formulation: <br /><span class="math display">$$
+\frac{\partial T}{\partial t} = A \, T + S(t)
+$$</span><br /></li>
+</ul>
+<p>Time discretization using theta-method: <br /><span class="math display"><em>T</em><sup><em>k</em> + 1</sup> − <em>T</em><sup><em>k</em></sup> = <em>θ</em> <em>d</em><em>t</em>[<em>A</em> <em>T</em><sup><em>k</em> + 1</sup>+<em>S</em><sup><em>k</em> + 1</sup>] + (1 − <em>θ</em>) <em>d</em><em>t</em>[<em>A</em> <em>T</em><sup><em>k</em></sup>+<em>S</em><sup><em>k</em></sup>]</span><br /></p>
+<p><br /><span class="math display">[<em>I</em>−<em>θ</em> <em>d</em><em>t</em> <em>A</em>]<em>T</em><sup><em>k</em> + 1</sup> = <em>θ</em> <em>d</em><em>t</em> <em>S</em><sup><em>k</em> + 1</sup> + (1 − <em>θ</em>) <em>d</em><em>t</em>[<em>A</em> <em>T</em><sup><em>k</em></sup>+<em>S</em><sup><em>k</em></sup>] + <em>T</em><sup><em>k</em></sup></span><br /></p>
+<p><br /><span class="math display">[<em>I</em>−<em>θ</em> <em>d</em><em>t</em> <em>A</em>]<em>T</em><sup><em>k</em> + 1</sup> = [<em>I</em>+(1−<em>θ</em>) <em>d</em><em>t</em> <em>A</em>]<em>T</em><sup><em>k</em></sup> + (<em>θ</em> <em>S</em><sup><em>k</em> + 1</sup>+(1−<em>θ</em>) <em>S</em><sup><em>k</em></sup>)<em>d</em><em>t</em></span><br /></p>
+<p><span class="math inline"><em>T</em><sup><em>k</em> + 1</sup></span> is solved using the backslash operator</p>
+<ul>
+<li><span class="math inline"><em>θ</em> = 0</span> : Forward Euler (explicit, 1st order)</li>
+<li><span class="math inline"><em>θ</em> = 1/2</span> : Crank–Nicolson (implicit, 2nd order)</li>
+<li><span class="math inline"><em>θ</em> = 1</span> : Backward Euler (implicit, 1st order),</li>
+</ul>
+<blockquote>
+<p>Remark 2: The Crank-Nicolson scheme is second order accurate but gives slowly decaying oscillations for large eigenvalues. It is unsuitable for parabolic problems with rapidly decayingtransients. The <span class="math inline"><em>θ</em> = 1</span> scheme damps all components, and should be used in the initial steps.</p>
+</blockquote>
+<p>solver takes: A matrix, T0 values, S time-series (sparse)</p>
+<h2 id="blocs">Blocs</h2>
+<ul>
+<li>Weather data</li>
+<li>Model topologique (i.e. model definition object)
+<ul>
+<li>Model parameter setting</li>
+</ul></li>
+<li>Linear ODE Solver
+<ul>
+<li>assemblage</li>
+<li>solve</li>
+</ul></li>
+<li>fit to measured data</li>
+</ul>
+<h2 id="reférences-et-liens">Reférences et liens</h2>
+<ul>
+<li>http://simonrouchier.org/files/2018-enb-review.pdf</li>
+</ul>
+</body>
+</html>
