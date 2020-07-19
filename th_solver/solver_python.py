@@ -108,7 +108,10 @@ for k, (name, _, _) in enumerate(nodes):
     
 plt.legend();
 # -
-
+# speed-up
+#
+# use auto-diff to get gradient (fiting optimisation)
+#
 
 
 
