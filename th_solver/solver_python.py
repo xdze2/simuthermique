@@ -50,7 +50,7 @@ def solve_model(nodes,
     theta = .5
     I_minus_A = I - theta*dt*WA
     I_plus_A = I + (1-theta)*dt*WA
-    delta_S = theta*S[:, :-1] + (1 - theta)*WS[:, 1:]
+    delta_S = theta*WS[:, :-1] + (1 - theta)*WS[:, 1:]
 
     # Solver loop
     T = np.zeros((nbr_nodes, nbr_steps))
