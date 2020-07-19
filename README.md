@@ -2,13 +2,13 @@
 
 code Python (& Julia) de simulation thermique dynamique (du bâtiment)
 
-[🡺 lien vers la documentation]( xdze2.github.io/simuthermique/ )
+[🡺 lien vers la documentation](https://xdze2.github.io/simuthermique/)
 
 ## Blocs
 
 - Accès aux données météo (API Weather data)
-  - [darksky](./weather_api/darksky_weatherdata.ipynb)
-  - [donnée climat de la RT2012](./weather_api/Fichiers_Meteo_RT2012/)
+  - [darksky](weather_api/darksky_weatherdata.ipynb)
+  - [donnée climat de la RT2012](weather_api/Fichiers_Meteo_RT2012/viz_yearly_weather_data.ipynb)
 - Récupération des mesures de température (data logger)
   - [emonCMS](data_logger/test_readrawdata.ipynb)
 - Calcul du flux solaire
@@ -24,7 +24,7 @@ code Python (& Julia) de simulation thermique dynamique (du bâtiment)
 
 Le modèle est l'équivalent d'un circuit électrique de résistances et condensateurs.
 
-Système d'équation différentielles **linéaires**:
+Système d'équations différentielles linéaires:
 
     M dT/dt = K × T(t) + S(t)
 
@@ -33,7 +33,7 @@ avec `T` le vecteur de température des noeuds du réseau, `M` les masses thermi
 
 ## Reférences et liens
 
-###  Estimation & inverse problems
+###  Estimation & problème inverse
 * «Solving inverse problems in building physics:  an overview ofguidelines for a careful and optimal use of data» S. Rouchier (2018), [Energy and Buildings, vol.  166, p.  178-195](http://simonrouchier.org/files/2018-enb-review.pdf)
 
 * https://hal.archives-ouvertes.fr/hal-01739623/document
