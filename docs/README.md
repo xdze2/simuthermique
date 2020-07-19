@@ -10,13 +10,13 @@ simplest solution to display math equation online
 with Katex
 
 
-* use pandoc's config file `pandoc.yaml`
+* use pandoc's config file `pandoc.yaml` (need last version)
 
-    $ pandoc --defaults=pandoc.yaml
+        $ pandoc --defaults=pandoc.yaml
 
-* and simple css styling (not the pandoc [template system](https://github.com/jgm/pandoc-templates))
-  * https://jez.io/tufte-pandoc-css/
+* and use simple css styling (not the pandoc [template system](https://github.com/jgm/pandoc-templates))
   * https://benjam.info/panam/
+  * https://jez.io/tufte-pandoc-css/
   * https://otsaloma.io/pub/markdown-css-github.html
 
 see also [Building a Website using Pandoc, Markdown, and Static HTML](http://wstyler.ucsd.edu/posts/pandoc_website.html)
