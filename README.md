@@ -1,14 +1,15 @@
 # simu thermique
 
-code Python (& Julia) de simulation thermique dynamique (du bâtiment)
+code Python de simulation thermique dynamique (du bâtiment)
 
-[🡺 lien vers la documentation](https://xdze2.github.io/simuthermique/)
+[🡺 lien vers la (futur) documentation](https://xdze2.github.io/simuthermique/)
 
 ## Blocs
 
 - Accès aux données météo (API Weather data)
   - [darksky](weather_api/darksky_weatherdata.ipynb)
   - [donnée climat de la RT2012](weather_api/Fichiers_Meteo_RT2012/viz_yearly_weather_data.ipynb)
+  - Météo France forecast data
 - Récupération des mesures de température (data logger)
   - [emonCMS](data_logger/test_readrawdata.ipynb)
 - Calcul du flux solaire
