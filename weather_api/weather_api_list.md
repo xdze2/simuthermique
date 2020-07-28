@@ -9,7 +9,7 @@
   
 #### Accuweather
 * https://developer.accuweather.com/packages
-* free: 50 calls/day, 24h historical data
+* free: 50 calls/day, last 24h historical data
 
 
 #### Climcell
@@ -36,7 +36,7 @@
 
 #### Weatherapi
 * https://www.weatherapi.com/pricing.aspx
-* Free: 7 day historical data
+* Free: last 7 day historical data
 
 #### Weatherbit
 * https://www.weatherbit.io/pricing
