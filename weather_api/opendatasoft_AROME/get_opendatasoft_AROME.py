@@ -47,7 +47,7 @@ except FileExistsError:
 logging.info('start script')
 
 
-def query():
+def query(commune, lat_lon):
     url = "https://public.opendatasoft.com/api/records/1.0/search/"
 
     lat, lon = lat_lon
@@ -59,31 +59,45 @@ def query():
               'sort':'forecast'}
 
     r = requests.get(url, params=params)
-
+    
     if r.status_code != 200:
         logging.error('query error')
         print('query error')
         print(r.text)
+        data = None
+        
     else:
-
         data = r.json()
-        records = data['records']
-        fields = [r['fields'] for r in records]
+        
+    return data
 
-        times = [(f['timestamp'], f['forecast']) for f in fields]
-        date_of_the_run = min(times, key=lambda x:x[1])[0]
 
-        filename = os.path.join(save_dir, f'{date_of_the_run}.json')
-        with open(filename, 'w') as outfile:
-            json.dump(data, outfile)
+def save_data(data):
+    records = data['records']
+    fields = [r['fields'] for r in records]
 
-        print(' > save:', filename)
-        logging.info(f'save - run:{date_of_the_run} {len(times)} points')
+    times = [(f['timestamp'], f['forecast']) for f in fields]
+    date_of_the_run = min(times, key=lambda x:x[1])[0]
 
+    filename = os.path.join(save_dir, f'{date_of_the_run}.json')
+    with open(filename, 'w') as outfile:
+        json.dump(data, outfile)
+
+    print(' > save:', filename)
+    logging.info(f'save - run:{date_of_the_run} {len(times)} points')
+
+
+save_data(data)
+
+data = query(commune, lat_lon)
 
 while True:
     query()
     print(datetime.now(), "waiting...")
     sleep(wait_hours *60*60)
+
+records = [r['fields'] for r in data['records']]
+
+records
 
 

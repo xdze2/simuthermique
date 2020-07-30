@@ -1,3 +1,3 @@
-from solver_python import solve_model
+from .solver_python import solve_model
 
-from graphmodel import drawgraph
+from .graphmodel import drawgraph

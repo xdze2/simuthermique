@@ -86,11 +86,9 @@ from collections import namedtuple
 # sudo apt install graphviz
 # # !pip install graphviz
 # https://github.com/xflr6/graphviz
-# -
 
 from graphviz import Graph
 
-# +
 graph = Graph(comment='thermal model')
 
 for node in nodes:

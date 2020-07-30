@@ -21,7 +21,7 @@ solve "electric circuit like" dynamic thermal model
 
 ## Notes
 
-The solver use as input the "low-level" model definition (nodes, internal_links, external_links, sources, dt), with numerical values
+The solver uses as input the "low-level" model definition (nodes, internal_links, external_links, sources, dt), with numerical values
 
 Higher level model description are useful. 
 
