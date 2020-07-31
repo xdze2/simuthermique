@@ -12,7 +12,7 @@ simplest solution to display **math equation** online
 with Katex
 
 
-* use pandoc's config file `pandoc.yaml` (need last version)
+* use pandoc's config file `pandoc.yaml` (need version >2.8)
 
         $ pandoc --defaults=pandoc.yaml
 
