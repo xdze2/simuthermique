@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: light
 #       format_version: '1.5'
-#       jupytext_version: 1.3.4
+#       jupytext_version: 1.4.0
 #   kernelspec:
-#     display_name: py3-projects
+#     display_name: Python 3
 #     language: python
-#     name: py3-projects
+#     name: python3
 # ---
 
 import numpy as np
@@ -18,20 +18,24 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 
+# pip install darkskylib
 from darksky import forecast
+#pip install tables
 from pvlib.location import Location
 
 # ## Get weather data and solar flux
 
 # +
-coords = (46.15, 4.4565)  # lat, lon degree
-altitude = 550  # meter
+coords = (46.145, 4.455)  # lat, lon degree
+altitude = 600  # meter
 timezone = 'Europe/Paris'
 
-days = pd.date_range(start = '2019-08-01',
-                     end =   '2019-08-11',
+days = pd.date_range(start = '2019-01-01', # year-month-day
+                     end =   '2020-01-01',
                      freq='1d',
                      tz=timezone)
+
+print(len(days), 'days')
 
 # +
 # Load the API key for darksky
@@ -44,7 +48,7 @@ def query_hourly_data(date, coords, api_key=KEY, verbose=True):
     #time = int(date.timestamp())
     time = date.isoformat()
     if verbose:
-        print('query', time, end='\r')
+        print('query', date.date(), end='\r')
     data = forecast(api_key, *coords,
                     units='si', lang='fr',
                     time=time, exclude=EXCLUDE)
@@ -57,20 +61,34 @@ def query_hourly_data(date, coords, api_key=KEY, verbose=True):
 
     weatherdata.index = pd.to_datetime(weatherdata.index, unit='s')
     weatherdata.index = weatherdata.index.tz_localize('UTC').tz_convert(data_tz)
+    
+    if verbose:
+        print(len(weatherdata), 'lines'+' '*12, end='\r')
     return weatherdata
 
 
-# +
-# test
-#hourlydata = query_hourly_data(d, coords, KEY)
 # -
 
+# test
+d = days[0]
+hourlydata = query_hourly_data(d, coords, KEY)
+
+# +
 # Query weather data
-hourlydata = [query_hourly_data(d, coords, KEY) for d in days]
+hourlydata = []
+for d in days:
+    data_of_the_day = query_hourly_data(d, coords, KEY)
+    hourlydata.append(data_of_the_day)
+    
 weatherdata = pd.concat(hourlydata, sort=True)
 print('done', weatherdata.shape, ' '*35)
 
+print('saved to csv')
+weatherdata.to_csv('./data/darksky_data.csv')
+# -
+
 # Interpolate
+# note: no sense to interpolate for instance precipAccumulation
 weatherdata_15min = weatherdata.resample('15min').interpolate('linear')
 
 # ## Sun data
@@ -103,6 +121,8 @@ weatherdata = pd.concat([weatherdata_15min, cs], axis=1)
 print('Columns:')
 print(', '.join(list(weatherdata.columns)))
 # -
+
+weatherdata
 
 # Graph
 plt.figure( figsize=(14, 7) )

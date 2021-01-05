@@ -54,7 +54,7 @@ k = 0
 zc = list(villes.keys())
 
 # +
-zone_climatique = 'H1a'
+zone_climatique = 'H1c'
 #zone_climatique = zc[k]
 #print(k, zone_climatique)
 #k += 1
@@ -116,16 +116,16 @@ ax2.set_title(f'{zone_climatique} {villes[zone_climatique]}')
 
 dirN_grid = data['dirN'].reshape(-1, 24).T
 diff_grid = data['diff'].reshape(-1, 24).T
-plt.plot(dirN_grid.sum(axis=0)/24, color='darkorange', label='directe')
+plt.plot(dirN_grid.sum(axis=0), color='darkorange', label='directe')
 plt.fill_between(x, np.zeros_like(x), dirN_grid.sum(axis=0)/24, color='darkorange', alpha=0.1);
 
-plt.plot(diff_grid.sum(axis=0)/24, color='lightslategray', label='diffus')
+plt.plot(diff_grid.sum(axis=0), color='lightslategray', label='diffus')
 #plt.fill_between(x, np.zeros_like(x), diff_grid.sum(axis=0)/24, color='lightslategray', alpha=0.1);
 
 plt.legend();
-plt.xlim(0, T_ext_grid.shape[1]); plt.title("Energie solaire directe moyenne par jour (Wh)");
-plt.ylabel("Energie solaire directe moyenne par jour (Wh)");
-plt.ylim((0, 400))
+plt.xlim(0, T_ext_grid.shape[1]); plt.title("Energie solaire directe par jour (Wh/m2)");
+plt.ylabel("Energie solaire directe par jour (Wh/m2)");
+plt.ylim((0, 400*24))
 
 
 #plt.fill_between(x, np.zeros_like(x), dirN_grid.sum(axis=0)/24, color='darkorange', alpha=0.1);
@@ -156,6 +156,8 @@ print( list(data.keys()) )
 
 # +
 # Export to csv
+zone_climatique = 'H1c'
+
 columns_to_export = ['Htsmd', 'te0', 'dirN']
 dataarray = np.stack([data[c] for c in columns_to_export], axis=-1)
 

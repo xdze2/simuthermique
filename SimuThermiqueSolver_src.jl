@@ -111,14 +111,18 @@ function add_simple_wall!(model, wall_id; material, thickness, area, offset=0)
     return (ext=id_ext, int=id_int, dx_grid=dx_grid)
 end
 
+"""
+    add_composite_wall!(model; layers, area, offset=0)
+    Add a multilayer wall to the model
 
-function add_composite_wall!(model, wall_id; layers, area, offset=0)
+    layers is a list of tuple: (layer_id::String, mat::Material, thickness::Float)
+"""
+function add_composite_wall!(model; layers, area, offset=0)
     offset = 0
     dx_grid = [0.0, ]
     id_ext, id_int = "", ""
-    for (k, (mat, th)) in enumerate(layers)
-        subwall_id = "$wall_id$k"
-        wall = add_simple_wall!(model, subwall_id; material=mat, thickness=th,
+    for (k, (layer_id, mat, th)) in enumerate(layers)
+        wall = add_simple_wall!(model, layer_id; material=mat, thickness=th,
                                 area=area, offset=offset)
         offset = -1
         append!(dx_grid, wall.dx_grid[2:end])
