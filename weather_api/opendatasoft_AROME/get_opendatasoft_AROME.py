@@ -18,6 +18,7 @@ import json, os
 import logging
 from time import sleep
 from datetime import datetime
+from pathlib import Path
 
 # # data AROME from opendatasoft
 
@@ -25,24 +26,29 @@ from datetime import datetime
 # ============
 #  Parameters
 # ============
-dataset = 'arome-0025-sp1_sp2'
-commune = 'Marseille'
-lat_lon = (43.3, 5.4)
 
-save_dir = 'data'
+city_lat_lon_coordinates = {
+    'Marseille': (43.3, 5.4),
+    'Toulouse':  (43.6, 1.45),
+}
+
+dataset = 'arome-0025-sp1_sp2'
+commune = 'Toulouse'
+lat_lon = city_lat_lon_coordinates[commune]
+
+save_dir = Path('data', commune)
+save_dir.mkdir(parents=True, exist_ok=True)
+print('mkdir', save_dir)
 
 wait_hours = 3
 # -
 
-logging.basicConfig(filename=os.path.join(save_dir, 'log.txt'),
-                    format='%(asctime)s - %(levelname)s  %(message)s',
-                    level=logging.INFO)
+logging.basicConfig(
+    filename=os.path.join(save_dir, 'log.txt'),
+    format='%(asctime)s - %(levelname)s  %(message)s',
+    level=logging.INFO
+)
 
-try:
-    os.mkdir(save_dir)
-    print('mkdir', save_dir)
-except FileExistsError:
-    pass
 
 logging.info('start script')
 
@@ -51,12 +57,12 @@ def query(commune, lat_lon):
     url = "https://public.opendatasoft.com/api/records/1.0/search/"
 
     lat, lon = lat_lon
-    params = {'dataset':dataset,
-              'rows':100,
-              'facet':['communes', 'code_commune'],
-              'refine.commune':commune,
-              'geofilter.distance':f"{lat:.2f}, {lon:.2f}, 100",
-              'sort':'forecast'}
+    params = {
+        'dataset':dataset,
+        'rows':100,
+        'geofilter.distance':f"{lat:.2f}, {lon:.2f}, 100",
+        'sort':'forecast'
+    }
 
     r = requests.get(url, params=params)
     
@@ -65,7 +71,6 @@ def query(commune, lat_lon):
         print('query error')
         print(r.text)
         data = None
-        
     else:
         data = r.json()
         
@@ -87,17 +92,11 @@ def save_data(data):
     logging.info(f'save - run:{date_of_the_run} {len(times)} points')
 
 
-save_data(data)
-
-data = query(commune, lat_lon)
 
 while True:
-    query()
+    data = query(commune, lat_lon)
+    save_data(data)
     print(datetime.now(), "waiting...")
     sleep(wait_hours *60*60)
-
-records = [r['fields'] for r in data['records']]
-
-records
 
 
