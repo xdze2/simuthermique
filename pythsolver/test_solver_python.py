@@ -20,7 +20,7 @@ import matplotlib.pylab as plt
 # %load_ext autoreload
 # %autoreload 2
 
-from solver_python import * 
+from solver_python import *
 from graphmodel import drawgraph
 
 # +
@@ -35,74 +35,53 @@ from graphmodel import drawgraph
 # list ot tuples [(internal node, source name, conductance value), ...]
 # use conductance=None if it is a direct heat source
 
-nodes = [('int',  0.5,  0.2), 
-         ('wall', 1.0,  0.1)]
+nodes = [("int", 0.5, 0.2), ("wall", 1.0, 0.1)]
 
-time    = np.linspace(0, 100, 456)
-sources = {'ext':np.sin(time)}
+time = np.linspace(0, 100, 456)
+sources = {"ext": np.sin(time)}
 
-internal_links = [('int', 'wall', .7), ]
-external_links = [('int', 'ext', 2.0), ]
+internal_links = [
+    ("int", "wall", 0.7),
+]
+external_links = [
+    ("int", "ext", 2.0),
+]
 
-dt = .1
+dt = 0.1
 # -
 
-drawgraph(nodes,
-          internal_links,
-          external_links,
-          sources)
+drawgraph(nodes, internal_links, external_links, sources)
 
 # +
-T = solve_model_noOptim(nodes,
-                internal_links,
-                external_links,
-                sources,
-                dt)
+T = solve_model_noOptim(nodes, internal_links, external_links, sources, dt)
 
 plt.figure(figsize=(12, 3))
-plt.plot(sources['ext'], label='ext')
+plt.plot(sources["ext"], label="ext")
 
 for k, (name, _, _) in enumerate(nodes):
     plt.plot(T[k, :], label=name)
-    
-plt.legend(); plt.xlabel('time');
+
+plt.legend()
+plt.xlabel("time")
 
 # +
-T = solve_model(nodes,
-                internal_links,
-                external_links,
-                sources,
-                dt)
+T = solve_model(nodes, internal_links, external_links, sources, dt)
 
 plt.figure(figsize=(12, 3))
-plt.plot(sources['ext'], label='ext')
+plt.plot(sources["ext"], label="ext")
 
 for k, (name, _, _) in enumerate(nodes):
     plt.plot(T[k, :], label=name)
-    
-plt.legend(); plt.xlabel('time');
+
+plt.legend()
+plt.xlabel("time")
 # -
 
 # %%timeit
-T = solve_model(nodes,
-                internal_links,
-                external_links,
-                sources,
-                dt)
+T = solve_model(nodes, internal_links, external_links, sources, dt)
 
 # %%timeit
-T = solve_model_noOptim(nodes,
-                internal_links,
-                external_links,
-                sources,
-                dt)
+T = solve_model_noOptim(nodes, internal_links, external_links, sources, dt)
 
 # %%timeit
-A, B =   assemble(nodes,
-                internal_links,
-                external_links,
-                sources)
-
-
-
-
+A, B = assemble(nodes, internal_links, external_links, sources)

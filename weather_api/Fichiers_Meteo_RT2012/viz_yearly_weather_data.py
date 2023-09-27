@@ -26,44 +26,59 @@ import matplotlib.pylab as plt
 #
 # documentation à propos des données: https://www.rt-batiment.fr/batiments-neufs/reglementation-thermique-2012/donnees-meteorologiques.html
 
-filename = './FichiersMeteo_RT2012.xls'
+filename = "./FichiersMeteo_RT2012.xls"
 weather_data = xlrd.open_workbook(filename)
 
-print('sheets:', ', '.join(weather_data.sheet_names()))
+print("sheets:", ", ".join(weather_data.sheet_names()))
 
 # +
-descriptif = weather_data.sheet_by_name('Descriptif')
+descriptif = weather_data.sheet_by_name("Descriptif")
 
-print('Descriptif')
-print('==========')
+print("Descriptif")
+print("==========")
 for row in descriptif.get_rows():
     r = [r.value for r in row]
-    print('\t'.join(r))
+    print("\t".join(r))
 # -
 
-villes = {'H1a': 'Trappes',
-          'H1b': 'Nancy',
-          'H1c': 'Macon',
-          'H2a': 'Rennes',
-          'H2b': 'La Rochelle',
-          'H2c': 'Agen',
-          'H2d': 'Carpentras',
-          'H3' : 'Nice'}
+villes = {
+    "H1a": "Trappes",
+    "H1b": "Nancy",
+    "H1c": "Macon",
+    "H2a": "Rennes",
+    "H2b": "La Rochelle",
+    "H2c": "Agen",
+    "H2d": "Carpentras",
+    "H3": "Nice",
+}
 
 k = 0
 zc = list(villes.keys())
 
 # +
-zone_climatique = 'H1c'
-#zone_climatique = zc[k]
-#print(k, zone_climatique)
-#k += 1
+zone_climatique = "H1c"
+# zone_climatique = zc[k]
+# print(k, zone_climatique)
+# k += 1
 
-# Reads columns
-variables = ['Htsmd', 'te0', 'we0', 'dirN', 'diff', 'Teciel', 'Vent', 'Teau', 'Gamma', 'Psi']
+# Reads columns
+variables = [
+    "Htsmd",
+    "te0",
+    "we0",
+    "dirN",
+    "diff",
+    "Teciel",
+    "Vent",
+    "Teau",
+    "Gamma",
+    "Psi",
+]
 datazone = weather_data.sheet_by_name(zone_climatique)
-data = {var:np.array([cell.value for cell in datazone.col(c, start_rowx=1)])
-        for c, var in enumerate(variables)}
+data = {
+    var: np.array([cell.value for cell in datazone.col(c, start_rowx=1)])
+    for c, var in enumerate(variables)
+}
 
 fig = plt.figure(figsize=(12, 10))
 nbr_graph = 3
@@ -71,107 +86,126 @@ nbr_graph = 3
 # === Temperature ===
 ax1 = plt.subplot(nbr_graph, 1, 1)
 
-T_ext_grid = data['te0'].reshape(-1, 24).T
-T_ciel_grid = data['Teciel'].reshape(-1, 24).T
-T_eau_grid = data['Teau'].reshape(-1, 24).T
+T_ext_grid = data["te0"].reshape(-1, 24).T
+T_ciel_grid = data["Teciel"].reshape(-1, 24).T
+T_eau_grid = data["Teau"].reshape(-1, 24).T
 
-plt.axhline(y=0, linewidth=1, color='black');
-plt.axhline(y=20, linewidth=1, linestyle=':', color='black');
+plt.axhline(y=0, linewidth=1, color="black")
+plt.axhline(y=20, linewidth=1, linestyle=":", color="black")
 
 # T_ext
-plt.plot(T_ext_grid.mean(axis=0), color='r', label='T° ext.')
+plt.plot(T_ext_grid.mean(axis=0), color="r", label="T° ext.")
 x = np.arange(T_ext_grid.shape[1])
-plt.fill_between(x, T_ext_grid.min(axis=0), T_ext_grid.max(axis=0), color='red', alpha=0.1);
+plt.fill_between(
+    x, T_ext_grid.min(axis=0), T_ext_grid.max(axis=0), color="red", alpha=0.1
+)
 
 # T_ciel
-#plt.plot(T_ciel_grid.max(axis=0), color='skyblue', label='T° eau (1m sol)')
-plt.plot(T_ciel_grid.mean(axis=0), color='darkblue', label='T° rayonnement ciel', alpha=0.2)
-#plt.plot(T_ciel_grid.min(axis=0), color='skyblue', label='T° eau (1m sol)')
+# plt.plot(T_ciel_grid.max(axis=0), color='skyblue', label='T° eau (1m sol)')
+plt.plot(
+    T_ciel_grid.mean(axis=0), color="darkblue", label="T° rayonnement ciel", alpha=0.2
+)
+# plt.plot(T_ciel_grid.min(axis=0), color='skyblue', label='T° eau (1m sol)')
 
 # T_eau
-plt.plot(T_eau_grid.mean(axis=0), color='skyblue', label='T° eau (1m sol)')
+plt.plot(T_eau_grid.mean(axis=0), color="skyblue", label="T° eau (1m sol)")
 
-plt.xlim(0, T_ext_grid.shape[1]); #plt.title("Température extérieure (°C)");
-plt.ylabel("Température extérieure (°C)");
-plt.legend(); plt.xlabel("jour de l'année");
-plt.title("Température extérieure (°C)");
+plt.xlim(0, T_ext_grid.shape[1])
+# plt.title("Température extérieure (°C)");
+plt.ylabel("Température extérieure (°C)")
+plt.legend()
+plt.xlabel("jour de l'année")
+plt.title("Température extérieure (°C)")
 plt.ylim((-10, 35))
 
 # === Vent ===
 ax1 = plt.subplot(nbr_graph, 1, 2, sharex=ax1)
-vent_grid = data['Vent'].reshape(-1, 24).T
+vent_grid = data["Vent"].reshape(-1, 24).T
 
-plt.plot(vent_grid.mean(axis=0), color='cadetblue', label='vitesse vent moy.')
+plt.plot(vent_grid.mean(axis=0), color="cadetblue", label="vitesse vent moy.")
 x = np.arange(T_ext_grid.shape[1])
-plt.fill_between(x, vent_grid.min(axis=0), vent_grid.max(axis=0), color='cadetblue', alpha=0.1);
+plt.fill_between(
+    x, vent_grid.min(axis=0), vent_grid.max(axis=0), color="cadetblue", alpha=0.1
+)
 
-plt.xlim(0, T_ext_grid.shape[1]); plt.title("vitesse moyenne du vent (m/s)");
-plt.ylabel("vitesse vent (m/s)"); plt.xlabel("jour de l'année");
-plt.legend();
+plt.xlim(0, T_ext_grid.shape[1])
+plt.title("vitesse moyenne du vent (m/s)")
+plt.ylabel("vitesse vent (m/s)")
+plt.xlabel("jour de l'année")
+plt.legend()
 plt.ylim((0, 15))
 
 # === Soleil ===
 ax2 = plt.subplot(nbr_graph, 1, 3, sharex=ax1)
-ax2.set_title(f'{zone_climatique} {villes[zone_climatique]}')
+ax2.set_title(f"{zone_climatique} {villes[zone_climatique]}")
 
-dirN_grid = data['dirN'].reshape(-1, 24).T
-diff_grid = data['diff'].reshape(-1, 24).T
-plt.plot(dirN_grid.sum(axis=0), color='darkorange', label='directe')
-plt.fill_between(x, np.zeros_like(x), dirN_grid.sum(axis=0)/24, color='darkorange', alpha=0.1);
+dirN_grid = data["dirN"].reshape(-1, 24).T
+diff_grid = data["diff"].reshape(-1, 24).T
+plt.plot(dirN_grid.sum(axis=0), color="darkorange", label="directe")
+plt.fill_between(
+    x, np.zeros_like(x), dirN_grid.sum(axis=0) / 24, color="darkorange", alpha=0.1
+)
 
-plt.plot(diff_grid.sum(axis=0), color='lightslategray', label='diffus')
-#plt.fill_between(x, np.zeros_like(x), diff_grid.sum(axis=0)/24, color='lightslategray', alpha=0.1);
+plt.plot(diff_grid.sum(axis=0), color="lightslategray", label="diffus")
+# plt.fill_between(x, np.zeros_like(x), diff_grid.sum(axis=0)/24, color='lightslategray', alpha=0.1);
 
-plt.legend();
-plt.xlim(0, T_ext_grid.shape[1]); plt.title("Energie solaire directe par jour (Wh/m2)");
-plt.ylabel("Energie solaire directe par jour (Wh/m2)");
-plt.ylim((0, 400*24))
-
-
-#plt.fill_between(x, np.zeros_like(x), dirN_grid.sum(axis=0)/24, color='darkorange', alpha=0.1);
+plt.legend()
+plt.xlim(0, T_ext_grid.shape[1])
+plt.title("Energie solaire directe par jour (Wh/m2)")
+plt.ylabel("Energie solaire directe par jour (Wh/m2)")
+plt.ylim((0, 400 * 24))
 
 
+# plt.fill_between(x, np.zeros_like(x), dirN_grid.sum(axis=0)/24, color='darkorange', alpha=0.1);
 
-plt.xlabel("jour de l'année");
-fig.suptitle(f'zone {zone_climatique} - {villes[zone_climatique]}', fontsize=16)
+
+plt.xlabel("jour de l'année")
+fig.suptitle(f"zone {zone_climatique} - {villes[zone_climatique]}", fontsize=16)
 
 plt.tight_layout(rect=(0, 0, 1, 0.97))
-filename = f'{zone_climatique}_{villes[zone_climatique]}.svg'
+filename = f"{zone_climatique}_{villes[zone_climatique]}.svg"
 plt.savefig(filename)
 
 # +
-# == Heat map == 
-T_ext_grid = np.array([h.value for h in datazone.col(1, start_rowx=1)]).reshape(-1, 24).T
+# == Heat map ==
+T_ext_grid = (
+    np.array([h.value for h in datazone.col(1, start_rowx=1)]).reshape(-1, 24).T
+)
 
 plt.figure(figsize=(15, 4))
-plt.pcolormesh(T_ext_grid, shading='flat'); plt.colorbar();
+plt.pcolormesh(T_ext_grid, shading="flat")
+plt.colorbar()
 plt.title("Température extérieure (°C)")
-plt.xlabel("jour de l'année"); plt.ylabel('heure');
+plt.xlabel("jour de l'année")
+plt.ylabel("heure")
 # -
 
 plt.figure(figsize=(15, 4))
-plt.pcolormesh(dirN_grid, shading='flat'); plt.colorbar();
+plt.pcolormesh(dirN_grid, shading="flat")
+plt.colorbar()
 
-print( list(data.keys()) )
+print(list(data.keys()))
 
 # +
 # Export to csv
-zone_climatique = 'H1c'
+zone_climatique = "H1c"
 
-columns_to_export = ['Htsmd', 'te0', 'dirN']
+columns_to_export = ["Htsmd", "te0", "dirN"]
 dataarray = np.stack([data[c] for c in columns_to_export], axis=-1)
 
-filename = f'{zone_climatique}_{villes[zone_climatique]}.csv'
-np.savetxt(filename, dataarray, fmt='%.18e', delimiter=';', header=';'.join(columns_to_export))
+filename = f"{zone_climatique}_{villes[zone_climatique]}.csv"
+np.savetxt(
+    filename, dataarray, fmt="%.18e", delimiter=";", header=";".join(columns_to_export)
+)
 # -
 
 # # Look at Correlations
 
-plt.plot(data['te0'], data['dirN'], '.')
+plt.plot(data["te0"], data["dirN"], ".")
 
-plt.plot(dirN_grid.max(axis=0), T_ciel_grid.mean(axis=0), '.')
+plt.plot(dirN_grid.max(axis=0), T_ciel_grid.mean(axis=0), ".")
 
-plt.plot(data['te0'], data['Teciel'], '.')
+plt.plot(data["te0"], data["Teciel"], ".")
 
 # https://physics.stackexchange.com/a/153947/105894
 # https://github.com/xdze2/thermique_appart/blob/master/Model02_tuile.ipynb
@@ -194,5 +228,3 @@ plt.plot(data['te0'], data['Teciel'], '.')
 #
 #     A warm clear night in the countryside, with a temperature of 15°C and a relative humidity of 25%. The modified Swinbank formula in this case yields a flux of 274 w/m2, which in turn corresponds to a black body temperature of -9.5°C or a gray body temperature of 11.1°C.
 #
-
-
