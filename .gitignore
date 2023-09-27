@@ -1,3 +1,8 @@
 venv/*
 
 .vscode
+
+draft/
+
+
+*.egg-info
