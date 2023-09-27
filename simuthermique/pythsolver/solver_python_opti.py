@@ -1,19 +1,3 @@
-# -*- coding: utf-8 -*-
-# ---
-# jupyter:
-#   jupytext:
-#     formats: ipynb,py:light
-#     text_representation:
-#       extension: .py
-#       format_name: light
-#       format_version: '1.5'
-#       jupytext_version: 1.4.2
-#   kernelspec:
-#     display_name: Python 3
-#     language: python
-#     name: python3
-# ---
-
 import numba as nb
 import numpy as np
 from scipy.linalg import lu_factor, lu_solve
@@ -37,6 +21,8 @@ def assemble(nodes, internal_links, external_links, sources):
 
     dT/dt = WA x T + WS
 
+    W matrix is the inverse of M, the mass matrix
+    
     return WA and WS matrices
     """
 

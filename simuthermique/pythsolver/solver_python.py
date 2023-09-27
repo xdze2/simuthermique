@@ -12,6 +12,15 @@ import numpy as np
 
 
 def solve_model(nodes, internal_links, external_links, sources, dt):
+    """Full numpy-python model.
+
+    Nodes: list of tuples [(name, mass, T0) , ...]
+    Sources: Dict {name: array (nbr time step), ...}
+    Internal links: list ot tuples [(node A, node B, conductance value), ...]
+    External links (i.e. with a source):
+    list ot tuples [(internal node, source name, conductance value), ...]
+    use conductance=None if it is a direct heat source
+    """
     # Assemblage
     nbr_nodes = len(nodes)
     nbr_steps = len(next(iter(sources.values())))

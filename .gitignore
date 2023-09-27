@@ -6,3 +6,4 @@ draft/
 
 
 *.egg-info
+*.pyc
