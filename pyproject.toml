@@ -10,8 +10,12 @@ keywords = ["model", "thermal"]
 license = {text = "MIT"}
 dependencies = [
     "numpy",
+    "pandas",
     "black",
-    "pytest"
+    "pytest",
+    "pysolar",
+    "pyyaml",
+
 ]
 dynamic = ["version"]
 
