@@ -4,33 +4,42 @@ import pandas as pd
 import pvlib
 
 
-class SolarCollector:
+class Location:
     def __init__(
         self,
         latitude: float,
         longitude: float,
-        surface_tilt_angle: float,
-        surface_azimuth: float,
+        altitude: float = 0,
     ) -> None:
         self.latitude = latitude
         self.longitude = longitude
-        self.surface_tilt_angle = surface_tilt_angle
-        self.surface_azimuth = surface_azimuth
-
-        self.location = pvlib.location.Location(self.latitude, self.longitude)
-
+        self.altitude = altitude
+        self._location = pvlib.location.Location(self.latitude, self.longitude, altitude=self.altitude)
+      
     def get_clear_sky_irad(self, date_range: pd.DatetimeIndex) -> pd.DataFrame:
-        return self.location.get_clearsky(date_range)
+        return self._location.get_clearsky(date_range)
 
     def get_solar_position(self, date_range: pd.DatetimeIndex) -> pd.DataFrame:
-        solar_pos = self.location.get_solarposition(date_range)
+        solar_pos = self._location.get_solarposition(date_range)
         solar_pos["altitude"] = 90 - solar_pos["zenith"]
         solar_pos["azimuth_south"] = (solar_pos["azimuth"] - 180)
         return solar_pos
+    
+
+class SolarCollector:
+    def __init__(
+        self,
+        location: Location,
+        surface_tilt_angle: float,
+        surface_azimuth: float,
+    ) -> None:
+        self.location = location
+        self.surface_tilt_angle = surface_tilt_angle
+        self.surface_azimuth = surface_azimuth
 
     def get_irradiance(self, date_range: pd.DatetimeIndex) -> pd.DataFrame:
-        irad = self.get_clear_sky_irad(date_range)
-        solar_pos = self.get_solar_position(date_range)
+        irad = self.location.get_clear_sky_irad(date_range)
+        solar_pos = self.location.get_solar_position(date_range)
 
         cos_theta = ray_incidence_cos_theta(
             self.surface_tilt_angle,
