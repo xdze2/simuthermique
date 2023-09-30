@@ -1,10 +1,5 @@
-
-
 import numpy as np
 from simuthermique.pythsolver.solver_python import solve_model
-
-
-
 
 
 nodes = [("int", 0.5, 0.2), ("wall", 1.0, 0.1)]
@@ -21,7 +16,6 @@ internal_links = [
 external_links = [
     ("int", "ext", 2.0),
 ]
-
 
 
 # drawgraph(nodes, internal_links, external_links, sources)
