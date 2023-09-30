@@ -14,17 +14,19 @@ class Location:
         self.latitude = latitude
         self.longitude = longitude
         self.altitude = altitude
-        self._location = pvlib.location.Location(self.latitude, self.longitude, altitude=self.altitude)
-      
+        self._location = pvlib.location.Location(
+            self.latitude, self.longitude, altitude=self.altitude
+        )
+
     def get_clear_sky_irad(self, date_range: pd.DatetimeIndex) -> pd.DataFrame:
         return self._location.get_clearsky(date_range)
 
     def get_solar_position(self, date_range: pd.DatetimeIndex) -> pd.DataFrame:
         solar_pos = self._location.get_solarposition(date_range)
         solar_pos["altitude"] = 90 - solar_pos["zenith"]
-        solar_pos["azimuth_south"] = (solar_pos["azimuth"] - 180)
+        solar_pos["azimuth_south"] = solar_pos["azimuth"] - 180
         return solar_pos
-    
+
 
 class SolarCollector:
     def __init__(
@@ -37,6 +39,13 @@ class SolarCollector:
         self.surface_tilt_angle = surface_tilt_angle
         self.surface_azimuth = surface_azimuth
 
+        # area
+        # horizon_alt = list() ? on Location
+        # blind_alt = ?
+        # reflectance
+        # transmittance
+        # cloud cover 
+
     def get_irradiance(self, date_range: pd.DatetimeIndex) -> pd.DataFrame:
         irad = self.location.get_clear_sky_irad(date_range)
         solar_pos = self.location.get_solar_position(date_range)
@@ -47,10 +56,10 @@ class SolarCollector:
             solar_pos["altitude"],
             solar_pos["azimuth_south"],
         )
-        direct_irad = cos_theta * irad['dni']
-        sky_view_factor = np.cos(self.surface_tilt_angle*np.pi/180)/2 + 0.5
-        diffuse_irad = sky_view_factor * irad['dhi']
-        return  direct_irad + diffuse_irad
+        direct_irad = cos_theta * irad["dni"]
+        sky_view_factor = (np.cos(deg_to_rad(self.surface_tilt_angle)) + 1) / 2
+        diffuse_irad = sky_view_factor * irad["dhi"]
+        return direct_irad + diffuse_irad
 
 
 def deg_to_rad(angle_deg: float) -> float:
@@ -80,4 +89,4 @@ def ray_incidence_cos_theta(
     cos_sigma, sin_sigma = np.cos(sigma), np.sin(sigma)
 
     cos_theta = cos_beta * np.cos(phi_S - phi_C) * sin_sigma + cos_sigma * sin_beta
-    return np.clip(cos_theta, 0, None) 
+    return np.clip(cos_theta, 0, None)
