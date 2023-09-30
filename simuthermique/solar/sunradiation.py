@@ -98,7 +98,9 @@ def sun_positionAndFlux(coords, date):
     phi_S_deg = pysolar.solar.get_azimuth(
         *coords, date
     )  # deg, azimuth of the sun,relative to south
-    beta_deg = pysolar.solar.get_altitude(*coords, date)  # deg, altitude angle of the sun
+    beta_deg = pysolar.solar.get_altitude(
+        *coords, date
+    )  # deg, altitude angle of the sun
 
     if is_upper_horizon(phi_S_deg, beta_deg):
         I0 = pysolar.radiation.get_radiation_direct(date, beta_deg)  # W/m2
@@ -129,15 +131,45 @@ def buildmultidayDF(coords, index, cloudCover=None):
     return df
 
 
-def project(sigma, phi_C, I0, phi_S_deg, beta_deg):
+def deg_to_rad(angle_deg: float) -> float:
+    return angle_deg * np.pi / 180
+
+
+def _cos_theta(
+    surface_tilt_angle_deg: float,
+    surface_azimuth_angle_deg: float,
+    solar_altitude_angle_deg: float,
+    solar_azimuth_angle_deg: float,
+) -> float:
+    """Cosinus of the angle of incidence on a tilted surface.
+
+    Azimuth angles are relative to the south, with positive values in the southeast direction
+
+    ref.: http://www.a-ghadimi.com/files/Courses/Renewable%20Energy/REN_Book.pdf
+    book "Renewable and Efficient Electric Power Systems", Gilbert M. Masters, 2004
+    page 414
+    """
+    sigma = deg_to_rad(surface_tilt_angle_deg)
+    phi_C = deg_to_rad(surface_azimuth_angle_deg)
+    beta = deg_to_rad(solar_altitude_angle_deg)
+    phi_S = deg_to_rad(solar_azimuth_angle_deg)
+
+    cos_beta, sin_beta = np.cos(beta), np.sin(beta)
+    cos_sigma, sin_sigma = np.cos(sigma), np.sin(sigma)
+
+    cos_theta = cos_beta * np.cos(phi_S - phi_C) * sin_sigma + cos_sigma * sin_beta
+    return cos_theta
+
+
+def project(sigma: float, phi_C, I0, phi_S_deg, beta_deg):
     """Calcul le flux solaire vu par une surface ayant une certaine orientation
 
     ref.: http://www.a-ghadimi.com/files/Courses/Renewable%20Energy/REN_Book.pdf
     book "Renewable and Efficient Electric Power Systems", Gilbert M. Masters, 2004
     page 414
 
-    sigma:  angle de la surface avec l'horizontal, deg
-    phi_C: azimuth de la surface, deg
+    sigma: tilt_angle, angle de la surface avec l'horizontal, deg
+    phi_C: azimuth_angel, azimuth de la surface, deg, positive in the southeast direction
 
     I0: flux solaire
     phi_S: azimuth du soleil, deg
@@ -145,15 +177,15 @@ def project(sigma, phi_C, I0, phi_S_deg, beta_deg):
     """
 
     # conversion en radian:
-    sigma = sigma * math.pi / 180
-    phi_C = phi_C * math.pi / 180
+    sigma = sigma * np.pi / 180
+    phi_C = phi_C * np.pi / 180
 
-    beta = beta_deg * math.pi / 180  # rad
-    phi_S = phi_S_deg * math.pi / 180  # rad
+    beta = beta_deg * np.pi / 180  # rad
+    phi_S = phi_S_deg * np.pi / 180  # rad
 
-    cosTheta = math.cos(beta) * math.cos(phi_S - phi_C) * math.sin(sigma) + math.cos(
+    cosTheta = np.cos(beta) * np.cos(phi_S - phi_C) * np.sin(sigma) + np.cos(
         sigma
-    ) * math.sin(beta)
+    ) * np.sin(beta)
 
     if cosTheta > 0:
         Isurf = I0 * cosTheta  # flux projeté, W/m2
