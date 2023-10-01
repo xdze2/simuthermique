@@ -1,84 +1,116 @@
-
 from typing import Dict, List
 from dataclasses import dataclass
 
+from itertools import chain
 
-class Node:
-    name: str
+import numpy as np
 
-class Link:
+
+@dataclass
+class ThermalCapacityLink:
     node_a: str
     node_b: str
-
-
-@dataclass
-class ThermalMass(Node):
-    # Actually it is a link (capacitor) but with ground
-    name: str
     mass: float
-    T0: float
 
 
 @dataclass
-class FixedTemperature(Node):
-    name: str
+class BatteryLink:
+    node_a: str
+    node_b: str
     Tk: List[float]
 
-@dataclass
-class FixedTemperature(Node):
-    name: str
-    Tk: List[float]
 
 @dataclass
-class HeatSource(Node):
-    name: str
-    Phik: List[float]
-
-@dataclass
-class ConductionLink(Link):
+class ConductionLink:
     node_a: str
     node_b: str
     conductance: float
 
 
+@dataclass
+class HeatSource:
+    name: str
+    Phik: List[float]
 
-# Nodes: list of tuples [(name, mass, T0) , ...]
-# Sources: Dict {name: array (nbr time step), ...}
-# Internal links: list ot tuples [(node A, node B, conductance value), ...]
-# External links (i.e. with a source):
-# list ot tuples [(internal node, source name, conductance value), ...]
-# use conductance=None if it is a direct heat source
-
-import numpy as np
 
 @dataclass
 class ModelGraph:
-    nodes: List[Node]
-    links: List[Link]
+    links: List
+    sources: List[HeatSource]
 
-    def _assemble(self):
+    def _assemble(self, time):
+        node_names = set()
+        for link in self.links:
+            node_names.add(link.node_a)
+            node_names.add(link.node_b)
 
-        node_name_to_idx = {node.name: k for k, node in enumerate(self.nodes)}
+        for node in self.sources:
+            node_names.add(node.name)
 
-        A = np.zeros(len(self.links), len(self.nodes))
-        C = np.zeros(len(self.links), 1)
-        for k, link in enumerate(self.links):
+        node_name_to_idx = {name: idx for idx, name in enumerate(node_names)}
+        link_name_to_idx = {
+            (link.node_a, link.node_b): idx
+            for idx, link in enumerate(self.links)
+        }
+
+        # Assemble
+        nbr_nodes = len(node_name_to_idx)
+        nbr_links = len(link_name_to_idx)
+        print(f"{nbr_nodes:=}")
+        print(f"{nbr_links:=}")
+
+        A = np.zeros((nbr_links, nbr_nodes))
+        diag_C = np.zeros(nbr_links)
+        b = np.zeros(nbr_links)
+        m = np.zeros(nbr_links)
+        for link in self.links:
+            k = link_name_to_idx[(link.node_a, link.node_b)]
             i, j = node_name_to_idx[link.node_a], node_name_to_idx[link.node_b]
             A[k, i] += 1
             A[k, j] -= 1
 
-            C[k] = link.conductance
+            if isinstance(link, ConductionLink):
+                diag_C[k] = link.conductance
+            elif isinstance(link, ThermalCapacityLink):
+                m[k] = link.mass
+            elif isinstance(link, BatteryLink):
+                b[k] = link.Tk
 
-        C = np.diag(C)
 
-        b = np.zeros(len(self.nodes), 1)
-        f = np.zeros(len(self.nodes), 1)
-        m = np.zeros(len(self.nodes), 1)
-        for k, node in enumerate(self.nodes):
-            if isinstance(ThermalMass, node):
-                m[k] = node.mass
-            elif isinstance(FixedTemperature, node):
-                b[k] = node.Tk
-            elif isinstance(HeatSource, node):
-                b[k] = node.Phik
-            
+        C = np.diag(diag_C)
+
+        f = np.zeros(nbr_nodes)
+        for node in self.sources:
+            k = node_name_to_idx[node.name]
+            f[k] = node.Phik
+
+        return A, C, b, f, m
+    
+
+links = [
+    ConductionLink("zero", "A", 1),
+    ConductionLink("A", "SRC", 0.1),
+    BatteryLink("zero", "SRC", 10)
+]
+
+sources = [
+]
+
+
+model = ModelGraph(
+    links=links,
+    sources=sources
+)
+
+A, C, b, f, m = model._assemble(1)
+
+
+AtC = np.matmul(A.transpose(),  C)
+AtCA = np.matmul(AtC, A)
+AtCb = np.matmul(AtC, b)
+
+print("AtCA=", AtCA)
+
+print("AtCb=", AtCb)
+
+print("f=", f)
