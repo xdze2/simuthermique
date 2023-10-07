@@ -1,6 +1,6 @@
 # Math
 
-:stem:
+:stem: latexmath
 
 ## Model formulation
 Linear, constant coefficent. All nodes are non-zero thermal mass.
@@ -15,9 +15,10 @@ Linear, constant coefficent. All nodes are non-zero thermal mass.
 
 The model equation is:
 
-stem:[
-    M  \frac{dT}{dt}  = -K\timesT - H\times(T - T_{ext}) + \phi 
-]
+[stem]
+++++
+M  \frac{dT}{dt}  = -K\times T - H\times (T - T_{ext}) + \phi 
+++++
 
 
 Model input parameters are:
@@ -32,18 +33,19 @@ Model input parameters are:
 
 General initial value problem equation:
 
-stem:[
-     \frac{dT}{dt}  = f(T, t) 
-]
-
+[stem]
+++++
+\frac{dT}{dt}  = f(T, t) 
+++++
 
 
 Time discretization using theta-method (time step k), where θ is a constant chosen between 0 and 1:
 
-stem:[
-    \frac{dT}{dt} \approx  \frac{T^[k+1} - T^k}{\Delta t} 
-     \approx \theta f(T^{k+1}, t^{k+1}) + (1-\theta)f(T^k, t^k)
-]
+[stem]
+++++
+\frac{dT}{dt} \approx  \frac{T^{k+1} - T^k}{\Delta t} 
+    \approx \theta f(T^{k+1}, t^{k+1}) + (1-\theta)f(T^k, t^k)
+++++
 
 
 - stem:[\theta=0] : Forward Euler (explicit, 1st order)
@@ -59,18 +61,20 @@ NOTE: "Remark 2: The Crank-Nicolson scheme is second order accurate but gives sl
 
 The model equation is simplified to:
 
-stem:[
-    M  \frac{dT}{dt}  = -\tilde K \times  T(t) + S(t)
-]
+[stem]
+++++
+M  \frac{dT}{dt}  = -\tilde K \times  T(t) + S(t)
+++++
 
 with stem:[\tilde K =  K + H] and  stem:[S =  \phi + HT_{ext}]
 
 
 
 
-stem:[
+[stem]
+++++
 ( M/{\Delta t} + \theta K ) T^{k+1} = ( M/{\Delta t} - (1-\theta) K ) T^{k} + \theta S^{k+1} + (1-\theta) S^{k}
-]
+++++
 
 
 Solve Ax = b, or inv(A)*b ? vs odeint ? 
