@@ -1,18 +1,8 @@
 from dataclasses import dataclass
 from typing import Callable, List
 
-
 import numpy as np
-
-# +
-# model validity check:
-# len(mass) == len(nodes)
-# no same id node & source
-# no link with unknown node id
-# no external link with no node_id
-# no internal link with source_id
-# all sources have same length
-# -
+from scipy.integrate import odeint
 
 
 @dataclass
@@ -87,7 +77,7 @@ class SimpleThermalModel:
 
         return self.K
 
-    def assemble_H(self):
+    def assemble_H(self) -> np.ndarray:
         self.H = np.zeros(len(self.internal_nodes))
         for link in self.external_links:
             internal_node_idx = self._node_name_to_idx[link.node_name_a]
@@ -95,11 +85,12 @@ class SimpleThermalModel:
 
         return self.H
 
-    def assemble_M(self):
+    def assemble_M(self) -> np.ndarray:
         self.M = [node.mass for node in self.internal_nodes]
-        return self.M
+        return np.array(self.M)
 
-    def assemble_S(self, t: float):
+    def assemble_S(self, t: float)-> np.ndarray:
+        """Assemble equivalent sources: S = phi + H*T_ext."""
         self.S = np.zeros(len(self.internal_nodes))
         for source in self.direct_sources:
             node_idx = self._node_name_to_idx[source.node_name]
@@ -112,7 +103,8 @@ class SimpleThermalModel:
 
         return self.S
 
-    def solve(self, delta_t: float, nbr_steps: int, theta: float = 0.5):
+    def solve(self, delta_t: float, nbr_steps: int, theta: float = 0.5) -> np.ndarray:
+        """Time integration."""
         Keq = self.assemble_K() + np.diag(self.assemble_H())
         Mm = np.diag(self.assemble_M()) / delta_t 
         a = Mm + theta*Keq
@@ -129,6 +121,24 @@ class SimpleThermalModel:
             S_k = S_k_plus_1
         return T
             
+    def get_fTt(self):
+        """Return f(t, T) = dT/dt model function."""
+        invM = np.diag(1/self.assemble_M())
+        Keq = self.assemble_K() + np.diag(self.assemble_H())
+        invMKeq = np.matmul(invM, Keq)
+
+        def fTr(t, T):
+            return -np.matmul(invMKeq, T) + self.assemble_S(t)
+        
+        return fTr
+
+    def solve_odeint(self, delta_t: float, nbr_steps: int) -> np.ndarray:
+        """Use scipy odeint solver."""
+        Tzero = [n.T_zero for n in self.internal_nodes]
+        fTt = self.get_fTt()
+        time = delta_t*np.arange(nbr_steps)
+        sol = odeint(fTt, Tzero, time, tfirst=True)
+        return sol
 
     def draw_graph(self):
         from graphviz import Graph
@@ -154,57 +164,60 @@ class SimpleThermalModel:
         return graph
 
 
-def solve_model(nodes, internal_links, external_links, sources, dt):
-    """Full numpy-python model.
 
-    Nodes: list of tuples [(name, mass, T0) , ...]
-    Sources: Dict {name: array (nbr time step), ...}
-    Internal links: list ot tuples [(node A, node B, conductance value), ...]
-    External links (i.e. with a source):
-    list ot tuples [(internal node, source name, conductance value), ...]
-    use conductance=None if it is a direct heat source
-    """
-    # Assemblage
-    nbr_nodes = len(nodes)
-    nbr_steps = len(next(iter(sources.values())))
-    node_idx = {node[0]: index for index, node in enumerate(nodes)}
 
-    A = np.zeros((nbr_nodes, nbr_nodes))
-    S = np.zeros((nbr_nodes, nbr_steps))
 
-    for node_A, node_B, conductance in internal_links:
-        i = node_idx[node_A]
-        j = node_idx[node_B]
-        A[i, i] -= conductance
-        A[j, j] -= conductance
-        A[i, j] += conductance
-        A[j, i] += conductance
+# def solve_model(nodes, internal_links, external_links, sources, dt):
+#     """Full numpy-python model.
 
-    for node, ext, conductance in external_links:
-        i = node_idx[node]
-        if conductance:
-            A[i, i] -= conductance
-            S[i, :] += conductance * sources[ext]
-        else:
-            S[i, :] += sources[ext]
+#     Nodes: list of tuples [(name, mass, T0) , ...]
+#     Sources: Dict {name: array (nbr time step), ...}
+#     Internal links: list ot tuples [(node A, node B, conductance value), ...]
+#     External links (i.e. with a source):
+#     list ot tuples [(internal node, source name, conductance value), ...]
+#     use conductance=None if it is a direct heat source
+#     """
+#     # Assemblage
+#     nbr_nodes = len(nodes)
+#     nbr_steps = len(next(iter(sources.values())))
+#     node_idx = {node[0]: index for index, node in enumerate(nodes)}
 
-    M = np.diag([n[1] for n in nodes])
-    W = np.linalg.inv(M)
+#     A = np.zeros((nbr_nodes, nbr_nodes))
+#     S = np.zeros((nbr_nodes, nbr_steps))
 
-    WA = np.matmul(W, A)
-    WS = np.matmul(W, S)
-    I = np.eye(nbr_nodes)
+#     for node_A, node_B, conductance in internal_links:
+#         i = node_idx[node_A]
+#         j = node_idx[node_B]
+#         A[i, i] -= conductance
+#         A[j, j] -= conductance
+#         A[i, j] += conductance
+#         A[j, i] += conductance
 
-    theta = 0.5
-    I_minus_A = I - theta * dt * WA
-    I_plus_A = I + (1 - theta) * dt * WA
-    delta_S = theta * WS[:, :-1] + (1 - theta) * WS[:, 1:]
+#     for node, ext, conductance in external_links:
+#         i = node_idx[node]
+#         if conductance:
+#             A[i, i] -= conductance
+#             S[i, :] += conductance * sources[ext]
+#         else:
+#             S[i, :] += sources[ext]
 
-    # Solver loop
-    T = np.zeros((nbr_nodes, nbr_steps))
-    T[:, 0] = np.array([n[2] for n in nodes])
-    for k in range(1, nbr_steps):
-        b = np.matmul(I_plus_A, T[:, k - 1]) + delta_S[:, k - 1] * dt
-        T[:, k] = np.linalg.solve(I_minus_A, b)
+#     M = np.diag([n[1] for n in nodes])
+#     W = np.linalg.inv(M)
 
-    return T
+#     WA = np.matmul(W, A)
+#     WS = np.matmul(W, S)
+#     I = np.eye(nbr_nodes)
+
+#     theta = 0.5
+#     I_minus_A = I - theta * dt * WA
+#     I_plus_A = I + (1 - theta) * dt * WA
+#     delta_S = theta * WS[:, :-1] + (1 - theta) * WS[:, 1:]
+
+#     # Solver loop
+#     T = np.zeros((nbr_nodes, nbr_steps))
+#     T[:, 0] = np.array([n[2] for n in nodes])
+#     for k in range(1, nbr_steps):
+#         b = np.matmul(I_plus_A, T[:, k - 1]) + delta_S[:, k - 1] * dt
+#         T[:, k] = np.linalg.solve(I_minus_A, b)
+
+#     return T
