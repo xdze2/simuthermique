@@ -2,10 +2,9 @@ from: markdown+emoji
 to: html5
 
 # leave blank for output to stdout:
-output-file: index.html
+output-file: doc/index.html
 input-files:
-- solver_math.md
-- ../README.md
+- doc_src/*.md
 
 # or you may use input-file: with a single value
 

@@ -1,0 +1,12 @@
+# Solver
+:stem:
+
+[](https://electronics.stackexchange.com/questions/644007/what-numerical-methods-are-used-in-circuit-simulation-how-can-i-get-an-overview)
+
+
+https://www2.eecs.berkeley.edu/Pubs/TechRpts/1975/ERL-m-520.pdf
+
+
+.Example circuit
+[#img-circuit]
+image::./images/sch_example_spice.png[example cicruit,300]
