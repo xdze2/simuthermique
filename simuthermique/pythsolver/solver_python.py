@@ -129,16 +129,15 @@ class SimpleThermalModel:
         invMKeq = np.matmul(invM, Keq)
 
         def fTr(t, T):
-            return -np.matmul(invMKeq, T) + self.assemble_S(t)
+            return -np.matmul(invMKeq, T) + np.matmul(invM, self.assemble_S(t))
 
         return fTr
 
-    def solve_odeint(self, delta_t: float, nbr_steps: int) -> np.ndarray:
+    def solve_odeint(self, timeindex_sec: np.ndarray) -> np.ndarray:
         """Use scipy odeint solver."""
         Tzero = [n.T_zero for n in self.internal_nodes]
-        fTt = self.get_fTt()
-        time = delta_t * np.arange(nbr_steps)
-        sol = odeint(fTt, Tzero, time, tfirst=True)
+        model_function = self.get_fTt()
+        sol = odeint(model_function, Tzero, timeindex_sec, tfirst=True)
         return sol
 
     def draw_graph(self):
@@ -155,7 +154,7 @@ class SimpleThermalModel:
             graph.node(node.name, label, shape="ellipse")
 
         for src in self.direct_sources:
-            graph.node(src.name, f"{src.name}", shape="triangle")
+            graph.node(src.node_name, f"{src.node_name}", shape="triangle")
 
         for link in self.internal_links + self.external_links:
             label = f"{link.conductance} W/K"

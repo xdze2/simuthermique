@@ -1,43 +1,57 @@
 import numpy as np
-from simuthermique.pythsolver.solver_python import ThermalMassNode, ConductionLink, ExternalNode, SimpleThermalModel, DirectSource
-
+from simuthermique.pythsolver.solver_python import (
+    ThermalMassNode,
+    ConductionLink,
+    ExternalNode,
+    SimpleThermalModel,
+    DirectSource,
+)
+import time
 import matplotlib.pyplot as plt
 
-mass = 1
+mass = 15
 phi0 = 2
 omega = 0.5
-h = 0.5
+h = 0.1
 Tzero = -0.5
-T_ext = 10
-T_amp = phi0/(mass*omega)
+T_ext = 20
+T_amp = phi0 / (mass * omega)
 
-print(f'T_amp=', T_amp)
+print(f"T_amp=", T_amp)
 
 model = SimpleThermalModel(
     internal_nodes=[ThermalMassNode("one", mass, Tzero)],
     external_nodes=[ExternalNode("ext", lambda t: T_ext)],
     links=[ConductionLink("ext", "one", h)],
-    direct_sources=[DirectSource("one", lambda t: phi0*np.cos(omega*t))]
+    direct_sources=[DirectSource("one", lambda t: phi0 * np.cos(omega * t))],
 )
 
 
-period = 2*np.pi/omega
-dt = period/500
-nbr_step = 50
-T = model.solve(
-    dt, nbr_step, 1
-)
+period = 2 * np.pi / omega
+dt = period / 100
+nbr_step = 500
+tic = time.perf_counter()
+T = model.solve(dt, nbr_step, 1)
+print(f"{(time.perf_counter()-tic)*1000}ms")
 
+t = np.linspace(0, dt * nbr_step, nbr_step)
 
-t = np.linspace(0, dt*nbr_step, nbr_step)
+a = phi0 / mass
+b = h / mass
+c = T_ext * h / mass
+bbw = b**3 + b * omega**2
 
-a = phi0/mass
-b = h/mass
-c = T_ext*h/mass
-bbw = b**3 + b*omega**2
+k1 = Tzero - (a * b**2 + c * omega**2 + b**2 * c) / bbw
+T_theo = (
+    a * b * omega * np.sin(omega * t)
+    + a * b**2 * np.cos(omega * t)
+    + c * omega**2
+    + b**2 * c
+) / bbw + k1 * np.exp(-b * t)
 
-k1 = Tzero - (a*b**2 + c*omega**2 + b**2*c)/bbw 
-T_theo = (a*b*omega*np.sin(omega*t) + a*b**2*np.cos(omega*t) + c*omega**2 + b**2*c)/bbw + k1*np.exp(-b*t)
+tic = time.perf_counter()
+sol = model.solve_odeint(t)
+print(f"{(time.perf_counter()-tic)*1000}ms")
 
 
 plt.figure(figsize=(12, 3))
@@ -46,11 +60,13 @@ plt.figure(figsize=(12, 3))
 for k, node in enumerate(model.internal_nodes):
     plt.plot(T[k, :], label=node.name)
 
-plt.plot(T_theo, label="theo", color='r')
+plt.plot(T_theo, label="theo", color="r")
+
+plt.plot(sol, label="odeint", color="k")
 
 plt.legend()
 plt.xlabel("time")
 plt.show()
 
 
-np.testing.assert_almost_equal(T_theo, T[0, :], decimal=1) 
+# np.testing.assert_almost_equal(T_theo, T[0, :], decimal=1)

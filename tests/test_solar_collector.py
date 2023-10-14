@@ -1,9 +1,13 @@
-from simuthermique.solar_collector import ray_incidence_cos_theta, SolarCollector
+from simuthermique.solar_collector import (
+    ray_incidence_cos_theta,
+    SolarCollector,
+    Location,
+)
 
 import numpy as np
 from pytest import approx
 
-from simuthermique.date_and_time import get_daterange
+from simuthermique.utils import get_daterange
 
 
 def test_ray_incidence_cos_theta():
@@ -16,9 +20,8 @@ def test_ray_incidence_cos_theta():
 
 
 def test_SolarCollector():
-    sc = SolarCollector(
-        latitude=43.6, longitude=1.34, surface_tilt_angle=90, surface_azimuth=-20
-    )
+    loc = Location(latitude=43.6, longitude=1.34)
+    sc = SolarCollector(loc, surface_tilt_angle=90, surface_azimuth=-20)
 
     tims = get_daterange("01/01/2023", "02/01/2023")
     I_rad = sc.get_irradiance(tims)

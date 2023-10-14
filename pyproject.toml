@@ -15,9 +15,9 @@ dependencies = [
     "pytest",
     "pysolar",
     "pyyaml",
-
+    "matplotlib"
 ]
 dynamic = ["version"]
 
 [tool.setuptools]
-packages = ["simuthermique", "pythsolver"]
+packages = ["simuthermique"]

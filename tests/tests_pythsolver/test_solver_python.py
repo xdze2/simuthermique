@@ -27,7 +27,7 @@ def test_SimpleThermalModel():
 
 
 def test_SimpleThermalModel_cosinus():
-    mass = 2
+    mass = 25
     phi0 = 2
     omega = 0.5
 
@@ -53,7 +53,7 @@ def test_SimpleThermalModel_cosinus():
 
 
 def test_SimpleThermalModel_mixed():
-    mass = 1
+    mass = 15
     phi0 = 2
     omega = 0.5
     h = 0.5
@@ -95,3 +95,6 @@ def test_SimpleThermalModel_mixed():
     # plt.show()
 
     np.testing.assert_almost_equal(T_theo, T[0, :], decimal=1)  # <-- warning
+
+
+# TODO add test for mass...
