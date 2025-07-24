@@ -1,8 +1,14 @@
 # simu thermique
 
-code Python de simulation thermique dynamique (du bâtiment)
+Code Python de simulation thermique dynamique (du bâtiment)
 
-[🡺 lien vers la (futur) documentation](https://xdze2.github.io/simuthermique/)
+
+- Script draft using Markov chain Monte Carlo for parameter estimation (MCMC): [mars2020/MCMC_001.ipynb](mars2020/MCMC_001.ipynb)
+
+
+[-> lien vers la (futur) documentation](https://xdze2.github.io/simuthermique/)
+
+
 
 ## Blocs
 
